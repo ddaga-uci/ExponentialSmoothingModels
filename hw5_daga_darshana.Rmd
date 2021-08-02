@@ -1,0 +1,311 @@
+title: "hw5_Darshana_Daga"
+author: "Darshana"
+date: "5/9/2021"
+
+#### Question1
+#### Reading data in and prepping the data
+```{r}
+options(stringsAsFactors = TRUE)
+setwd('C:\\Users\\darsh\\OneDrive\\Spring Quarter\\Predictive Analytics\\Assignment 5')
+options(stringsAsFactors = TRUE)    #need to run this twice
+dat <- read.csv("hw5_bike_share_day.csv")
+
+#converting data in timeseries object
+cntts <- ts(dat[,14], frequency = 7)
+
+#loading fpp2 library
+library(fpp2)
+
+#ses model
+model1 <- ses(cntts, alpha = 0.25, 
+              initial = "simple")
+summary(model1)
+
+model1.1 <- ses(cntts)
+summary(model1.1)
+```
+
+The RMSE for model 1 is 965.0229 and for model1.1 is 964.5168. Both the models are similar, but the model1.1 is slightly better as its using the starting value and alpha to optimize the outcomes.
+
+#### Question2
+```{r}
+model2 <- holt(cntts)
+summary(model2)
+```
+
+The RMSE is still similar for model1.1 964.5168 and model2 964.7877.
+But the ME is 4.592199 for Model1.1 and -18.42518 for model2, this
+shows that the error has higher degree on Model2, so I suggest Model1.1 is still better.
+
+#### Question3
+```{r}
+model3.1 <- hw(cntts, seasonal = "additive")
+model3.2 <- hw(cntts, seasonal = "multiplicative")
+model3.3 <- hw(cntts, damped=TRUE, seasonal = "multiplicative")
+
+summary(model3.1)
+summary(model3.2)
+summary(model3.3)
+
+```
+
+The RMSE from the three models are;
+
+1. model3.1 (additive) is  953.1229
+2. model3.2 (multiplicative) is 957.2871
+3. model3.3 (multiplicative and damp = TRUE) 944.5366
+
+The model3.3 is better among all models in question 3, as well as its
+better than in question 1 & 2 as well,. The reason is that the RMSE is smallest for model3.3, RMSE = 944.5366 as well as the mean error is lowest.
+
+In  HW both additive and multiplicative the fit is good as the model does simple exponential smoothing, to forecast data that has trend as well as seasonality.
+
+The damn method of Holts accounts for the fact that its incorrect to expect a continuing upward growing trend in data by using the damp function. And that's how the fit is best for holts-winter's damp model.
+
+#### Question4
+```{r}
+model4 <- hw(cntts, damped=TRUE, seasonal = "multiplicative", h=28)
+summary(model4)
+
+autoplot(cntts, series = "Bike Rentals") +
+  autolayer(model4, series = "Forecasts") +
+  ggtitle("Bike rental 4 weeks Forecasts") + 
+  ylab("Count") +
+  xlab("Days")
+
+```
+
+#### Question5
+```{r}
+#loading the data
+fix(JohnsonJohnson)
+
+#looking into the data
+?JohnsonJohnson
+head(JohnsonJohnson)
+
+model5 <- ets(JohnsonJohnson, model = "AAA")
+summary(model5)
+
+range(JohnsonJohnson)
+coef(model5)
+accuracy(model5)
+fitted(model5)
+
+autoplot(JohnsonJohnson, series = "Quaterly Earnings") +
+  autolayer(fitted(model5), series = "AAA") +
+  ggtitle("AQuaterly Earnings from  1960 - 1980") + 
+  ylab("Dollars $") +
+  xlab("Year")
+
+autoplot(model5)
+
+```
+
+The data is of quarterly earning in dollars per share of Johnson & Johnson share from 1960 to 1980. There are 84 observation in the data, ranging from year 1960 to 1980, across 4 quarters. The range of values is from 0.44 to 16.20 dollar earning per share. The model components & fit is as below;
+Call:
+ ets(y = JohnsonJohnson, model = "AAA") 
+
+  Smoothing parameters:
+    alpha = 0.0701 
+    beta  = 0.0699 
+    gamma = 0.8563 
+
+  Initial states:
+    l = 0.577 
+    b = -0.0352 
+    s = 0.2124 0.1273 -0.3444 0.0047
+
+  sigma:  0.4588
+
+     AIC     AICc      BIC 
+250.8828 253.3152 272.7601 
+
+Training set error measures:
+                     ME      RMSE       MAE      MPE     MAPE      MASE
+Training set 0.07321067 0.4363976 0.3009786 2.398031 9.293143 0.4289736
+                  ACF1
+Training set -0.123596
+[1]  0.44 16.20
+      alpha        beta       gamma           l           b          s0 
+ 0.07005553  0.06992075  0.85627583  0.57701356 -0.03521840  0.21244342 
+         s1          s2 
+ 0.12730488 -0.34442394 
+                     ME      RMSE       MAE      MPE     MAPE      MASE
+Training set 0.07321067 0.4363976 0.3009786 2.398031 9.293143 0.4289736
+                  ACF1
+Training set -0.123596
+           Qtr1       Qtr2       Qtr3       Qtr4
+1960  0.5464708  0.1850430  0.6952710  0.8093953
+1961  0.7080932  0.5785605  0.8028321  0.4488273
+1962  0.6290003  0.7215536  0.9713340  0.6050633
+1963  0.7748898  0.8317889  0.9881962  0.6680710
+1964  0.9065010  0.8927488  1.1126192  0.9022393
+1965  1.0888418  1.1876233  1.4536642  1.2281531
+1966  1.4007626  1.5192789  1.6500175  1.4579471
+1967  1.4991739  1.6452160  2.1010202  1.7693157
+1968  1.7344417  1.7595615  2.0509961  2.1022027
+1969  1.8565733  2.4316150  2.7344789  2.6711382
+1970  2.5081592  2.8082254  3.1565452  2.8722399
+1971  3.5423589  4.2442241  4.5854446  4.4532050
+1972  4.4328631  5.1645534  5.1739653  4.9165731
+1973  5.5763614  5.7527428  5.7319024  5.2537887
+1974  6.4594705  6.7249757  7.3172989  6.0072285
+1975  6.6905556  7.0390823  7.6868495  6.6757102
+1976  7.7076872  8.4592732  8.6168386  6.9450227
+1977  8.5149619  9.7666629  9.3281109  8.0068728
+1978 10.7740152 11.7533071 11.2248351 10.6053520
+1979 13.5758217 13.8257850 13.6628244 10.7541986
+1980 15.6405485 14.7665266 16.4773003 11.7295152
+
+#### Question6
+```{r}
+model6.1 <- ets(JohnsonJohnson, model = "ANN")
+summary(model6.1)
+
+model6.2 <- ets(JohnsonJohnson, model = "AAN")
+summary(model6.2)
+
+model6.3 <- ets(JohnsonJohnson, model = "MAA", damped = TRUE)
+summary(model6.3)
+
+model6.4 <- ets(JohnsonJohnson, model = "MAM", damped = TRUE)
+summary(model6.4)
+
+RMSE_ets <- data.frame(matrix(0,4,1))
+RMSE_ets[1,1] <- summary(model6.1)[,2]
+RMSE_ets[2,1] <- summary(model6.2)[,2]
+RMSE_ets[3,1] <- summary(model6.3)[,2]
+RMSE_ets[4,1] <- summary(model6.4)[,2]
+
+
+names(RMSE_ets) <- "MSE"
+rownames(RMSE_ets) <- c("ANN", "AAN", "MAA-Damped", "MAM-Damped")
+
+RMSE_ets
+
+```
+Comparing all the AIC (both in question 6 & Question 5), the lowest AIC is for ets model "MAA" with AIC of 171.2899.
+
+#### Question7
+
+The ets() function by default estimates the maximum likelihood of data than providing the minimum sum of squares for errors. The ets() function is not trying to forecast, instead it  just is trying to use the model which has the optimal value for the ets parameters and returns information about the fitted model.
+
+A important factor is ets() function takes into account error due to the multiplicative function which can come in if there are zero or negative numbers in the data.
+
+So even though the AAA mode had a lower RMSE, we still looked at AIC as that is the parameter to test how large is the likelihood of the data coming out of the ets model. As the AIC of MAA is much smaller compared at 171.2899 to AIC for AAA model at 250.8828.
+
+
+#### Question8
+```{r}
+fix(debitcards)
+
+model8.1 <- ets(debitcards)
+model8.2 <- ets(debitcards, model = "ANN")
+model8.3 <- ets(debitcards, model = "AAN")
+model8.4 <- ets(debitcards, model = "AAA")
+model8.5 <- ets(debitcards, model = "MAA", damped = TRUE)
+model8.6 <- ets(debitcards, model = "MAM", damped = TRUE)
+
+RMSE_ets8 <- data.frame(matrix(0,6,1))
+RMSE_ets8[1,1] <- summary(model8.1)[,2]
+RMSE_ets8[2,1] <- summary(model8.2)[,2]
+RMSE_ets8[3,1] <- summary(model8.3)[,2]
+RMSE_ets8[4,1] <- summary(model8.4)[,2]
+RMSE_ets8[5,1] <- summary(model8.5)[,2]
+RMSE_ets8[6,1] <- summary(model8.6)[,2]
+names(RMSE_ets8) <- "MSE"
+rownames(RMSE_ets8) <- c('Optimal', 'ANN', 'AAN', 'AAA', 'MAA-Damped', 'MAM-Damped')
+
+RMSE_ets8
+
+autoplot(model8.1 )
+
+model8  <- forecast(model8.1 , h = 24, level = 80)
+
+autoplot(debitcards, series = "Actual Values") +
+  autolayer(model8, series = 'ETS Forecast') +
+  ggtitle("Monthly Debit Card Usage in Iceland (2000-2013) with Forecasts") +
+  ylab("Debit Card Usage (in million ISK)") +
+  xlab("Year")
+
+```
+
+The model choosen by optimal ets is MAM. The associated parameters for the model are as below;
+
+>ETS(M,A,M) 
+Call:
+ ets(y = debitcards) 
+Smoothing parameters:
+    alpha = 0.3831 
+    beta  = 0.0001 
+    gamma = 0.0005 
+Initial states:
+    l = 8.2195 
+    b = 0.0813 
+    s = 1.2572 0.9576 0.9868 0.9771 1.1039 1.0637
+           1.0374 1.0278 0.9198 0.9231 0.8602 0.8854
+sigma:  0.0469
+AIC     AICc      BIC 
+738.9388 743.1305 791.6365 
+Training set error measures:
+                     ME      RMSE       MAE         MPE     MAPE
+Training set 0.01998494 0.7239404 0.5423039 -0.01069241 3.456976
+                  MASE       ACF1
+Training set 0.4232463 -0.1427266
+
+
+#### Question9
+```{r}
+#fix(goog)
+model9.1 <- ets(goog)
+
+RMSE9 <- data.frame(matrix(0,1,1))
+RMSE9[1,1] <- summary(model9.1)[,2]
+
+names(RMSE9) <- "RMSE"
+row.names(RMSE9) <- 'Optimal'
+RMSE9
+summary(model9.1)
+autoplot(model9.1)
+gofcst <- forecast(model9.1, h = 30, level = FALSE)
+
+autoplot(goog, series = "Actual Values") + 
+  autolayer(gofcst, series = 'ETS Forecast') +
+  ggtitle("Daily Closing Stock Prices of Google Inc.") + 
+  ylab("Closing Stock Price (in $)") +
+  xlab("Time")
+```
+
+The best model selected by ETS is (M,N,N).The associated parameters for the model are as below;
+
+>ETS(M,N,N) 
+Call:
+ ets(y = goog) 
+Smoothing parameters:
+    alpha = 0.9999 
+Initial states:
+    l = 392.7798 
+sigma:  0.0147
+AIC     AICc      BIC 
+11220.52 11220.55 11235.25 
+Training set error measures:
+                    ME     RMSE      MAE        MPE     MAPE      MASE
+Training set 0.4209327 8.729954 5.823624 0.06249646 0.973181 0.9990079
+                   ACF1
+Training set 0.03881924
+ETS(M,N,N) 
+
+#### Question10
+```{r}
+Model10 <- auto.arima(goog)
+
+summary(Model10)
+
+accuracy(Model10)
+
+autoplot(forecast(Model10))
+
+```
+
+The auto Arima model selected the ARIMA(0,1,0) with drift . In my opinion the auto Arima model is better than the model9 as model9 has an AIC of 11220.52 whereas the Arima model has an AIC of 7166.89. Much lower compared ETS(M,N,N)  model in Question9. Arima tries to minimize the AICc and MLE and give model with the smallest AICc value.  The model RMSE is 8.7197.
