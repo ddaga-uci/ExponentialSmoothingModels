@@ -1,0 +1,298 @@
+title: "hw4_Darshana_Daga"
+author: "Darshana"
+date: "5/2/2021"
+
+#### Question1
+#### Reading data in and prepping the data
+```{r}
+options(stringsAsFactors = TRUE)
+setwd('C:\\Users\\darsh\\OneDrive\\Spring Quarter\\Predictive Analytics\\Assignment 4')
+options(stringsAsFactors = TRUE)    #need to run this twice
+dat <- read.csv("hw4_bike_share_day.csv")
+dat1 <- dat
+dat1$season <- as.factor(dat1$season)
+dat1$yr <- as.factor(dat1$yr)
+dat1$mnth <- as.factor(dat1$mnth)
+dat1$weekday <- as.factor(dat1$weekday)
+dat1$weathersit <- as.factor(dat1$weathersit)
+#str(dat1)
+
+timetr <- data.frame(1:731)
+timetrsq <- timetr^2
+
+dat1 <- cbind(dat1, timetr, timetrsq)
+
+library(dplyr)
+
+dat1<-dat1 %>% rename(timetr = names(.)[15])
+dat1<-dat1 %>% rename(timetrsq = names(.)[16])
+
+names(dat)
+names(dat1)
+
+```
+
+The new & transformed variables are;
+
+1. Season
+2. Year (yr)
+3. Month (mnth)
+4. Weekday (weekday)
+5. Weather (weathersit)
+6. Timetr
+7. Timetsrq
+
+#### Question2
+```{r}
+dat1$dteday <- as.Date(dat1$dteday, format = "%m/%d/%Y")
+
+plot(dat1$dteday, dat1$cnt, xlab = "Month/Year", 
+     ylab = "Sales")
+lines(dat1$dteday, dat1$cnt, type = "l")
+```
+
+Post converting the date variable as date, and plotting the sales over time,
+I noticed trends in data which seems to be influenced by, months. There
+is dip in sales around October may be because less people are going to work during 
+holiday season, as well as it gets cold during winter reducing the number 
+of riders, where as during mid of the year when its
+summer the riders increase due to more pleasant weather.
+
+
+#### Question3 
+```{r}
+reg1 <- lm(cnt ~ timetr + timetrsq + mnth, data = dat1)
+summary(reg1)
+options(scipen=999)
+yhat3 <- predict(reg1, dat1)
+RSS3 <- sum((dat1$cnt - yhat3)^2)
+MSE3 <- RSS3/(nrow(dat1)-13-1)
+RMSE3 <- MSE3^0.5
+RMSE3
+```
+The model fits okay with 0.713 r squared, which definitely can be improved.
+The time and time squared variables show significant relationship to the intercept
+but the degree of effect is relatively smaller compared to the intercept and
+other variable value, for example a unit increase in time squared only reduces
+the intercept by 0.002272 riders, which is negligible.
+The months do show a seasonality effect and its quite evident, the winter months 
+from month 10 onward we see a dip in bikers and December being the worst month
+reducing riders by almost 773.27, where as the summer months are adding almost 
+2000-2600 riders.
+
+#### Question4 
+```{r}
+reg2 <- lm(cnt ~ timetr + timetrsq + season, data = dat1)
+summary(reg2)
+
+yhat4 <- predict(reg2, dat1)
+RSS4 <- sum((dat1$cnt - yhat4)^2)
+MSE4 <- RSS4/(nrow(dat1)-5-1)
+RMSE4 <- MSE4^0.5
+RMSE4
+
+```
+
+The RMSE for question 3 is 1047.201 and for question 4 is 1170.851. Model 3 r squared
+is 0.731 which is higher than of Model 4 at 0.6372. I think that model 3
+is better because the months are able to provide more granular level details 
+to predict the count compared to season.
+
+#### Question5
+```{r}
+#install.packages("fpp2")
+library(fpp2)
+
+cntts <- ts(dat1[,14], frequency = 7)
+cntts[1:10]
+
+autoplot(cntts) +
+  ggtitle("Bike Riders") +
+  ylab("Count") +
+  xlab("Weeks")
+
+ggAcf(cntts)
+```
+
+The time series version plot shows that the year 1 and year 2 are quite
+different, but with each year the start of the year is slower and it picks up 
+at around week 16 and then sees a big dip around week 35 for both the year.
+The relationship doesn't show a linear relationship. With sligh more
+correlation
+
+Regarding the autocorrelation plot, it seems all the days are highly correlated, 
+and it does shows significance in the relationship.With weekends having a 
+little higher correlation.
+
+#### Question6
+```{r}
+f_nvd <- rwf(cntts, h = 28, drift = TRUE)
+
+autoplot(f_nvd) +
+  ylab("Bikers") +
+  xlab("Weekly")
+
+res_nvd <- f_nvd$residuals
+MSE_nvd <- mean((res_nvd[2:731])^2)
+RMSE6.1 <- MSE_nvd^0.5
+RMSE6.1
+
+
+f_snv <- snaive(cntts, h = 28)
+
+autoplot(f_snv) +
+  ylab("Bikers") +
+  xlab("Weekly")
+
+res_snv <- f_snv$residuals
+MSE_snv <- mean((res_snv[8:731])^2)
+RMSE6.2 <- MSE_snv^0.5
+RMSE6.2
+
+CV.nvd <- tsCV(cntts, rwf, drift=TRUE, h=28)
+sqrt(mean(CV.nvd^2, na.rm=TRUE))
+RMSE6.3 <- sqrt(mean(residuals(rwf(cntts, drift=TRUE))^2, na.rm=TRUE)) 
+
+
+CV.snv <- tsCV(cntts, snaive, h=28)
+sqrt(mean(CV.snv^2, na.rm=TRUE))
+RMSE6.4 <- sqrt(mean(residuals(snaive(cntts))^2, na.rm=TRUE)) 
+
+```
+
+The RMSE is as below;
+
+1. For rwf its 1064.535
+2. For Snaive its 1341.106
+3. For cross validation rwf its 1471.651
+4. For cross validation Snaive its 1404.557
+
+#### Question 7
+```{r}
+#calculating 5, 7, 11 and 17 time period moving average model
+ma5 <- ma(cntts, 5)
+ma7 <- ma(cntts, 7)
+ma11 <- ma(cntts, 11)
+ma17 <- ma(cntts, 17)
+
+#calculating RMSE for the models above
+RMSE7.1 = mean((cntts - na.omit(ma5))^2)^0.5 
+RMSE7.2 = mean((cntts - na.omit(ma7))^2)^0.5 
+RMSE7.3 = mean((cntts - na.omit(ma11))^2)^0.5 
+RMSE7.4 = mean((cntts - na.omit(ma17))^2)^0.5
+
+RMSE7.1
+RMSE7.2
+RMSE7.3
+RMSE7.4
+
+#Plotting the 4 models in one graph
+autoplot(cntts, series = "Actual Counts") +
+  autolayer(ma5, series = "MA(5)") +
+  autolayer(ma7, series = "MA(7)") +
+  autolayer(ma11, series = "MA(11)") +
+  autolayer(ma17, series = "MA(17)") +
+  xlab("Year") + ylab("Count") +
+  ggtitle("Bikers rental count 2011-2012") +
+  scale_colour_manual(values =c("Actual Counts"="black","MA(5)"="red","MA(7)"="grey50","MA(11)"="blue","MA(17)"="green"), 
+breaks=c("Data", "5-MA","7-MA", "11-MA", "17-MA"))    
+
+#Plotting the best model to visually see the effect
+autoplot(cntts, series = "Actual Counts") +
+  autolayer(ma5, series = "MA(5)") +
+  xlab("Year") + ylab("Count") +
+  ggtitle("Bikers rental count 2011-2012") +
+  scale_colour_manual(values =c("Actual Counts"="black","MA(5)"="red"), 
+breaks=c("Data", "5-MA"))  
+```
+
+The RMSE of the different ma models are;
+
+1. For ma5 its 707.5955
+2. For ma7 its 794.9735
+3. For ma11 its 868.0221
+4. For ma17 its 879.68
+
+The best model is ma5 with RMSE of 707.5955. 
+
+#### Question 8
+```{r}
+dc1_classical_add <- decompose(cntts, type = "additive")
+autoplot(dc1_classical_add) +
+  ggtitle("Sales Classical Additive Decomposition") + 
+  xlab("Year")
+#
+#  Here is the multiplicative version
+#
+dc1_classical_mult <- decompose(cntts, type = "multiplicative")
+autoplot(dc1_classical_mult) +
+  ggtitle("Sales Classical Multiplicative Decomposition") + 
+  xlab("Year")
+
+#  To get the remainder part in the additive case:
+#
+dc1_classical_add$random
+MSE_dc1_cA <- mean((na.omit(dc1_classical_add$random))^2)
+RMSE8.1 <- MSE_dc1_cA^0.5
+RMSE8.1
+
+fit_cM <- dc1_classical_mult$trend * 
+  dc1_classical_mult$seasonal
+
+MSE_dc1_cM <- mean((na.omit(cntts - fit_cM))^2)
+RMSE8.2 <- MSE_dc1_cM^0.5
+RMSE8.2
+
+```
+
+From both the classical additive and multiplicative model plot we can see that the
+trend had been captured very well from the data. Year 2 is higher than year 1,
+but both have lower bikers at the start of the year and increase in demand mid 
+year around summer. 
+The seasonal plot is not capturing the variability well and is not providing 
+much insights into the seasonal effect on data.
+
+The RMSE for the models are as below;
+1. Additive model RMSE is 781.3811
+2. Multiplicative model RMSE is 782.5306
+
+Pretty close!
+
+#### Question 9
+```{r}
+#install.packages("fpp2")
+library(fpp2)
+
+decomp_STL <- stl(cntts, s.window = 11, t.window = 7, robust = TRUE) 
+rem_stl <- decomp_STL$time.series[,3]
+MSE_stl <- mean((rem_stl)^2)
+RMSE9 <- MSE_stl^0.5
+RMSE9
+```
+
+The RMSE of this model is 750.8186
+
+#### Question 10
+```{r}
+all_RMSE <- cbind(RMSE3,RMSE4,RMSE6.1,RMSE6.2,RMSE6.3,RMSE6.4,RMSE7.1,RMSE7.2,
+             RMSE7.3,RMSE7.4,RMSE8.1,RMSE8.2,RMSE9)
+
+all_RMSE
+
+```
+
+The RMSE for all models are;
+ RMSE3    RMSE4  RMSE6.1  RMSE6.2  RMSE6.3  RMSE6.4  RMSE7.1  RMSE7.2  RMSE7.3 RMSE7.4
+[1,] 1047.201 1170.851 1064.525 1341.106 1064.525 1341.106 707.5955 794.9735 868.0221  879.68
+      RMSE8.1  RMSE8.2    RMSE9
+[1,] 781.3811 782.5306 750.8186
+
+The lowest RMSE 707.5955 is from RMSE7.1, which is moving average model with
+a 5-period centered moving average. This is a forecasting model, using the 
+moving average of 5-periods to predict the biker count in coming period.
+
+Looking at the work of the assignment, models which are able to capture the 
+effect of season and trend as well are taking into account the overall growth
+in the numbers are able to provide better variability understanding in the
+data, that is biker rental counts.  One reason why the moving average worked 
+is that days are highly autocorrelated.
