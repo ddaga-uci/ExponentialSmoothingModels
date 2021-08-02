@@ -1,4 +1,4 @@
-###### ExponentialSmoothingModels
+#### ExponentialSmoothingModels
 Purpose
 To practice modeling with exponential smoothing models that estimate trend, seasonal, and level components.
 
